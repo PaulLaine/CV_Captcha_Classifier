@@ -4,6 +4,8 @@ import keras
 from keras import layers
 import os
 import cv2
+from captcha.image import ImageCaptcha
+from random import randrange
 
 WHITE = [255, 255, 255]
 
@@ -14,6 +16,20 @@ def createList():
     for i in range(97,123,1):
         asclist.append(chr(i))
     return asclist
+
+
+def generateCaptcha():
+    code = ""
+    char_list = createList()
+    for _ in range(5):
+        randnum = randrange(len(char_list))
+        char = char_list[randnum]
+        code = code + char
+        del char_list[randnum]
+    image = ImageCaptcha(width=280, height=90)
+    #data = image.generate(code)
+    image.write(code, "valid_captcha.png")
+    return code
 
 def getLabel(path):
     code = os.path.split(path)
@@ -48,6 +64,7 @@ def processCaptcha(folder):
     # Store all png images into one numpy array
     images = []
 
+    input_shape = (28, 28, 3)
     # I want to be sure that every image is consitent
     for i, row in df_train.iterrows():
         img_name = row['file']
@@ -90,7 +107,9 @@ def createModel(input_shape):
             layers.MaxPooling2D(pool_size=(2, 2)),
             layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
             layers.MaxPooling2D(pool_size=(2, 2)),
+            layers.Dropout(0.25),
             layers.Flatten(),
+            layers.Dense(128, activation="relu"),
             layers.Dropout(0.25),
             layers.Dense(36, activation="softmax"),
         ]
